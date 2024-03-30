@@ -1,0 +1,5 @@
+// https://stackoverflow.com/questions/31632191/have-karma-keep-browser-and-test-results-open-longer
+config.set({
+   singleRun: false,
+   autoWatch: true
+});
