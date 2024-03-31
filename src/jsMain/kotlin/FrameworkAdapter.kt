@@ -18,23 +18,26 @@ internal external interface FrameworkAdapter {
     fun test(name: String, ignored: Boolean, testFn: () -> Any?)
 }
 
-internal fun FrameworkAdapter.toTestFramework(untransformedName: String) = object : JsTestFramework {
-    val frameworkAdapter: FrameworkAdapter by lazy {
-        transformedAdapter()
-        // To disable the transformation, uncomment the following line.
-        // this@toTestFramework
-    }
+internal fun FrameworkAdapter.toTestFramework(untransformedName: String, report: TestReport? = null) =
+    object : JsTestFramework {
+        override val report = report
 
-    override fun toString(): String = "$untransformedName/transformed"
+        val frameworkAdapter: FrameworkAdapter by lazy {
+            transformedAdapter()
+            // To disable the transformation, uncomment the following line.
+            // this@toTestFramework
+        }
 
-    override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
-        frameworkAdapter.suite(name, ignored, suiteFn)
-    }
+        override fun toString(): String = "$untransformedName/transformed"
 
-    override fun test(name: String, ignored: Boolean, testFn: () -> Any?) {
-        frameworkAdapter.test(name, ignored, testFn)
+        override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
+            frameworkAdapter.suite(name, ignored, suiteFn)
+        }
+
+        override fun test(name: String, ignored: Boolean, testFn: () -> Any?) {
+            frameworkAdapter.test(name, ignored, testFn)
+        }
     }
-}
 
 // Conditional transformation required by the Kotlin/JS test infra.
 private fun FrameworkAdapter.transformedAdapter(): FrameworkAdapter {

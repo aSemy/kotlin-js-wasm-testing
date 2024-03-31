@@ -1,19 +1,18 @@
 import kotlin.js.Promise
 
-internal actual val standaloneJsTestFramework: JsTestFramework = object : StandaloneJsTestFramework() {
+internal actual val standaloneJsFlatTestFramework: JsTestFramework = object : StandaloneJsFlatTestFramework() {
     override fun toString(): String = "standalone/Wasm/JS"
 
     override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
-        if (ignored) return// TODO
+        if (ignored) return // TODO
 
         suiteFn()
 
-        val suiteFlowId = nextFlowId++
-        reportSuiteStart(name, suiteFlowId)
+        val suiteFlowId = report.addSuiteStart(name)
 
         if (tests.isEmpty()) {
             // Finish a suite with no tests synchronously.
-            reportSuiteFinish(name, suiteFlowId)
+            report.addSuiteFinish(name, suiteFlowId)
         } else {
             // Run tests and finish the suite asynchronously.
             fun Test.runWithRemainingTests(nextIndex: Int) {
@@ -22,7 +21,7 @@ internal actual val standaloneJsTestFramework: JsTestFramework = object : Standa
                     if (nextTest != null) {
                         nextTest.runWithRemainingTests(nextIndex + 1)
                     } else {
-                        reportSuiteFinish(name, suiteFlowId)
+                        report.addSuiteFinish(name, suiteFlowId)
                     }
                     null
                 }
@@ -33,28 +32,26 @@ internal actual val standaloneJsTestFramework: JsTestFramework = object : Standa
     }
 
     private fun Test.startedPromise() = Promise { resolve, _ ->
-        val flowId = nextFlowId++
-
-        reportTestStart(name, flowId)
+        val flowId = report.addTestStart(name)
 
         try {
             val promise = testFn() as? Promise<*>
             if (promise != null) {
                 promise.then {
-                    reportTestFinish(name, flowId)
+                    report.addTestFinish(name, flowId)
                     resolve(null)
                     null
                 }.catch { exception ->
-                    reportTestFailure(name, "$exception", flowId)
+                    report.addTestFailureAndFinish(name, Throwable("$exception"), flowId)
                     resolve(null)
                     null
                 }
             } else {
-                reportTestFinish(name, flowId)
+                report.addTestFinish(name, flowId)
                 resolve(null)
             }
         } catch (exception: Throwable) {
-            reportTestFailure(name, "$exception", flowId)
+            report.addTestFailureAndFinish(name, exception, flowId)
             resolve(null)
         }
     }

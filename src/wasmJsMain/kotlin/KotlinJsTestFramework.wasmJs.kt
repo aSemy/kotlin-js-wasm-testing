@@ -3,11 +3,13 @@ import kotlinx.coroutines.promise
 import kotlin.js.Promise
 
 internal fun kotlinJsTestFrameworkAvailable(): Boolean =
-   js("typeof describe === 'function' && typeof it === 'function'")
+    js("typeof describe === 'function' && typeof it === 'function'")
 
 internal actual val kotlinJsTestFramework: JsTestFramework by lazy {
     if (kotlinJsTestFrameworkAvailable()) {
         object : JsTestFramework {
+            override val report = null
+
             override fun toString(): String = "Kotlin/JS/Wasm"
 
             override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
@@ -31,45 +33,42 @@ internal actual val kotlinJsTestFramework: JsTestFramework by lazy {
             }
         }
     } else {
-        standaloneJsTestFramework
+        standaloneJsFlatTestFramework
     }
 }
 
 internal actual fun CoroutineScope.testFunctionPromise(testFunction: suspend () -> Unit): Any? =
-   promise { testFunction() }
+    promise { testFunction() }
 
-internal fun callTest(testFn: () -> Any?): Promise<*>? =
-    try {
-        (testFn() as? Promise<*>)?.catch { exception ->
-            val jsException = exception
-                .toThrowableOrNull()
-                ?.toJsError()
-                ?: exception
-            Promise.reject(jsException)
-        }
-    } catch (exception: Throwable) {
-        jsThrow(exception.toJsError())
+internal fun callTest(testFn: () -> Any?): Promise<*>? = try {
+    (testFn() as? Promise<*>)?.catch { exception ->
+        val jsException = exception
+            .toThrowableOrNull()
+            ?.toJsError()
+            ?: exception
+        Promise.reject(jsException)
     }
+} catch (exception: Throwable) {
+    jsThrow(exception.toJsError())
+}
 
 @Suppress("UNUSED_PARAMETER")
-internal fun jsThrow(jsException: JsAny): Nothing =
-   js("{ throw jsException; }")
+internal fun jsThrow(jsException: JsAny): Nothing = js("{ throw jsException; }")
 
 @Suppress("UNUSED_PARAMETER")
 internal fun throwableToJsError(message: String, stack: String): JsAny =
-   js("{ const e = new Error(); e.message = message; e.stack = stack; return e; }")
+    js("{ const e = new Error(); e.message = message; e.stack = stack; return e; }")
 
-internal fun Throwable.toJsError(): JsAny =
-   throwableToJsError(message ?: "", stackTraceToString())
+internal fun Throwable.toJsError(): JsAny = throwableToJsError(message ?: "", stackTraceToString())
 
 // Jasmine test framework functions
 
 @Suppress("UNUSED_PARAMETER")
 private fun describe(description: String, suiteFn: () -> Unit) {
-   // Here we disable the default 2s timeout and use the timeout support which Kotest provides via coroutines.
-   // The strange invocation is necessary to avoid using a JS arrow function which would bind `this` to a
-   // wrong scope: https://stackoverflow.com/a/23492442/2529022
-   js("describe(description, function () { this.timeout(0); suiteFn(); })")
+    // Here we disable the default 2s timeout and use the timeout support which Kotest provides via coroutines.
+    // The strange invocation is necessary to avoid using a JS arrow function which would bind `this` to a
+    // wrong scope: https://stackoverflow.com/a/23492442/2529022
+    js("describe(description, function () { this.timeout(0); suiteFn(); })")
 }
 
 private external fun xdescribe(name: String, testFn: () -> Unit)

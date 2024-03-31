@@ -12,22 +12,25 @@ import kotlinx.coroutines.CoroutineScope
  * Nesting of test suites may not be supported by TeamCity reporters of kotlin-test-js-runner.
  */
 internal interface JsTestFramework {
-   /**
-    * Declares a test suite. (Theoretically, suites may be nested and may contain tests at each level.)
-    *
-    * [suiteFn] declares one or more tests (and/or sub-suites, theoretically).
-    * Due to [limitations of JS test frameworks](https://github.com/mochajs/mocha/issues/2975) supported by
-    * Kotlin's test infra, [suiteFn] cannot handle asynchronous invocations.
-    */
-   fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit)
+    /** The framework's own report, or `null` if reports are created by an external framework. */
+    val report: TestReport?
 
-   /**
-    * Declares a test.
-    *
-    * [testFn] may return a `Promise`-like object for asynchronous invocation. Otherwise, the underlying JS test
-    * framework will invoke [testFn] synchronously.
-    */
-   fun test(name: String, ignored: Boolean, testFn: () -> Any?)
+    /**
+     * Declares a test suite. (Theoretically, suites may be nested and may contain tests at each level.)
+     *
+     * [suiteFn] declares one or more tests (and/or sub-suites, theoretically).
+     * Due to [limitations of JS test frameworks](https://github.com/mochajs/mocha/issues/2975) supported by
+     * Kotlin's test infra, [suiteFn] cannot handle asynchronous invocations.
+     */
+    fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit)
+
+    /**
+     * Declares a test.
+     *
+     * [testFn] may return a `Promise`-like object for asynchronous invocation. Otherwise, the underlying JS test
+     * framework will invoke [testFn] synchronously.
+     */
+    fun test(name: String, ignored: Boolean, testFn: () -> Any?)
 }
 
 internal expect val kotlinJsTestFramework: JsTestFramework

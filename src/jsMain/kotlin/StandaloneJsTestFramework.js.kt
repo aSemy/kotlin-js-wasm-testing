@@ -1,25 +1,16 @@
 import kotlin.js.Promise
 
-internal actual val standaloneJsTestFramework = object : FrameworkAdapter {
-    override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit)
-        = untransformedJsTestFramework.suite(name, ignored, suiteFn)
-
-    override fun test(name: String, ignored: Boolean, testFn: () -> Any?)
-        = untransformedJsTestFramework.test(name, ignored, testFn)
-}.toTestFramework("JS/standalone")
-
-private val untransformedJsTestFramework = object : StandaloneJsTestFramework() {
+private val untransformedJsTestFramework = object : StandaloneJsFlatTestFramework() {
     override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
-        if (ignored) return// TODO
+        if (ignored) return // TODO
 
         suiteFn()
 
-        val suiteFlowId = nextFlowId++
-        reportSuiteStart(name, suiteFlowId)
+        val suiteFlowId = report.addSuiteStart(name)
 
         if (tests.isEmpty()) {
             // Finish a suite with no tests synchronously.
-            reportSuiteFinish(name, suiteFlowId)
+            report.addSuiteFinish(name, suiteFlowId)
         } else {
             // Run tests and finish the suite asynchronously.
             fun Test.runWithRemainingTests(nextIndex: Int) {
@@ -28,7 +19,7 @@ private val untransformedJsTestFramework = object : StandaloneJsTestFramework() 
                     if (nextTest != null) {
                         nextTest.runWithRemainingTests(nextIndex + 1)
                     } else {
-                        reportSuiteFinish(name, suiteFlowId)
+                        report.addSuiteFinish(name, suiteFlowId)
                     }
                 }
             }
@@ -38,27 +29,33 @@ private val untransformedJsTestFramework = object : StandaloneJsTestFramework() 
     }
 
     private fun Test.startedPromise() = Promise { resolve, _ ->
-        val flowId = nextFlowId++
-
-        reportTestStart(name, flowId)
+        val flowId = report.addTestStart(name)
 
         try {
             val promise = testFn() as? Promise<*>
             if (promise != null) {
                 promise.then {
-                    reportTestFinish(name, flowId)
+                    report.addTestFinish(name, flowId)
                     resolve(Unit)
                 }.catch { exception ->
-                    reportTestFailure(name, "$exception", flowId)
+                    report.addTestFailureAndFinish(name, exception, flowId)
                     resolve(Unit)
                 }
             } else {
-                reportTestFinish(name, flowId)
+                report.addTestFinish(name, flowId)
                 resolve(Unit)
             }
         } catch (exception: Throwable) {
-            reportTestFailure(name, "$exception", flowId)
+            report.addTestFailureAndFinish(name, exception, flowId)
             resolve(Unit)
         }
     }
 }
+
+internal actual val standaloneJsFlatTestFramework = object : FrameworkAdapter {
+    override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) =
+        untransformedJsTestFramework.suite(name, ignored, suiteFn)
+
+    override fun test(name: String, ignored: Boolean, testFn: () -> Any?) =
+        untransformedJsTestFramework.test(name, ignored, testFn)
+}.toTestFramework("JS/standalone", untransformedJsTestFramework.report)
