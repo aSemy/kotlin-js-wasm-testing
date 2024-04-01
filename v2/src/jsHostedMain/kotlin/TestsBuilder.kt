@@ -1,6 +1,5 @@
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.TimeSource
 import kotlin.time.measureTime
 
@@ -8,38 +7,65 @@ import kotlin.time.measureTime
 annotation class TestsBuilderDsl
 
 @TestsBuilderDsl
-class TestsBuilder {
+class TestsBuilder(
+    private val scopeName: String,
+    parent: String?
+) {
+    private val reporter = TestReporter("tests-reporter", parent = parent)
 
-    private val reporter = TestReporter("tests-reporter")
-
-    suspend fun context(name: String, block: suspend TestsBuilder.() -> Unit) {
+    suspend fun context(
+        name: String,
+        block: suspend TestsBuilder.() -> Unit,
+    ): Unit = supervisorScope {
         reporter.suiteStart(name)
         val duration = measureTime {
-            block()
+            TestsBuilder(name, scopeName).block()
         }
         reporter.suiteFinish(name, duration)
     }
 
-    suspend fun test(name: String, block: suspend () -> Unit): Unit = supervisorScope {
+    suspend fun xcontext(
+        name: String,
+        @Suppress("UNUSED_PARAMETER")
+        block: suspend TestsBuilder.() -> Unit,
+    ): Unit = supervisorScope {
+        reporter.testIgnored(name, "context")
+    }
+
+    suspend fun test(
+        name: String,
+        block: suspend TestScope.() -> Unit,
+    ): Unit = supervisorScope {
         reporter.testStart(name)
 
         val markStart = TimeSource.Monotonic.markNow()
 
-        launch(
-            CoroutineExceptionHandler { _, exception ->
-                reporter.testFailure(name, exception)
-                reporter.testFinish(name, markStart.elapsedNow())
-            }
-        ) {
-            block()
+        try {
+            TestScope.block()
+        } catch (ex: Throwable) {
+            reporter.testFailure(name, ex)
+            if (ex is CancellationException) throw ex
+        } finally {
             reporter.testFinish(name, markStart.elapsedNow())
         }
+    }
+
+    suspend fun xtest(
+        name: String,
+        @Suppress("UNUSED_PARAMETER")
+        block: suspend TestScope.() -> Unit,
+    ): Unit = supervisorScope {
+        reporter.testIgnored(name, "xtest")
     }
 }
 
 
-suspend fun tests(block: suspend TestsBuilder.() -> Unit) {
-    TestsBuilder().block()
+@TestsBuilderDsl
+object TestScope
+
+
+suspend fun tests(block: suspend TestsBuilder.() -> Unit): Unit = supervisorScope {
+    TestsBuilder("", null).block()
 }
 
 

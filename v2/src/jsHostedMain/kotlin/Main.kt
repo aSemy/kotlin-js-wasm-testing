@@ -14,6 +14,17 @@ suspend fun runTests(): Unit = tests {
             delay(2.seconds)
             throw AssertionError("this is a failure")
         }
+
+        xtest("should be ignored") {
+            delay(5.seconds)
+            throw IllegalStateException("should not be thrown")
+        }
+    }
+
+    xcontext("ignored context") {
+        test("active test, but should be ignored") {
+            delay(3.seconds)
+        }
     }
 }
 

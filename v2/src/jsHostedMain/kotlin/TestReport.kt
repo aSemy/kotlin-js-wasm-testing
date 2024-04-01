@@ -1,7 +1,9 @@
 import kotlin.time.Duration
 
-class TestReporter(private val flowId: String) {
-
+class TestReporter(
+    private val flowId: String,
+    private val parent: String? ,
+) {
 
     fun suiteStart(name: String) {
         teamCityMessage(
@@ -65,6 +67,7 @@ class TestReporter(private val flowId: String) {
         val args = buildList {
             add(operation.tcEscape())
             if (name != null) add("name='${name.tcEscape()}'")
+            if (parent != null) add("parent='${name.tcEscape()}'")
             if (message != null) add("message='${message.tcEscape()}'")
             if (timestamp != null) add("timestamp='${timestamp.removeSuffix("Z").tcEscape()}'")
 //        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
