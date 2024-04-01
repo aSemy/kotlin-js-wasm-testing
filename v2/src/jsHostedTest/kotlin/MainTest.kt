@@ -1,0 +1,4 @@
+
+suspend fun main() {
+    runTests()
+}
