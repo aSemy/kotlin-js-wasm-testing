@@ -30,7 +30,6 @@ val kTest get() = currentAdapter!!
 
 class TestJs {
 
-
     @Test
     fun kotlinTestTests() {
 
@@ -62,45 +61,3 @@ fun test(name: String, ignored: Boolean = false, testBlock: () -> Unit) {
         testBlock()
     }
 }
-
-
-
-//class TestJs {
-//
-//    @Test
-//    fun passwordValidationTests() {
-//
-//
-//
-////        // create an outer context
-////        context("Given a password validator") {
-////            val usernameValidator = UsernameValidator()
-////
-////            // nest some inner contexts + tests
-////            context("When username is very long") {
-////                val username = "very long username ".repeat(100)
-////                test("Then expect validation passes") {
-////                    assertTrue { usernameValidator.isValid(username) }
-////                }
-////            }
-////            context("When username is not blank") {
-////                val username = "foo bar"
-////                test("Then expect validation passes") {
-////                    assertTrue { usernameValidator.isValid(username) }
-////                }
-////            }
-////
-////            // tests + contexts can be dynamically added
-////            mapOf(
-////                "blank" to "   ",
-////                "null" to null,
-////            ).forEach { (failureReason, username) ->
-////                context("When username is $failureReason") {
-////                    test("Then expect validation fails") {
-////                        assertTrue { usernameValidator.isValid(username) }
-////                    }
-////                }
-////            }
-////        }
-//    }
-//}
