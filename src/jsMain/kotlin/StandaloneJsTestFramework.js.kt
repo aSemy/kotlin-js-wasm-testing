@@ -4,9 +4,9 @@ private val untransformedJsTestFramework = object : StandaloneJsFlatTestFramewor
     override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
         if (ignored) return // TODO
 
-        suiteFn()
-
         val suiteFlowId = report.addSuiteStart(name)
+
+        suiteFn()
 
         if (tests.isEmpty()) {
             // Finish a suite with no tests synchronously.
