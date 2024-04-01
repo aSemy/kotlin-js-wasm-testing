@@ -22,22 +22,38 @@ inline fun TestReport.asTest(name: String, test: () -> Unit) {
 
 fun TestReport.addSuiteStart(name: String): Int {
     val flowId = nextFlowId++
-    val flowIdStr = "${prefix}${flowId}".tcEscape()
-    println("##teamcity[testSuiteStarted name='${name.tcEscape()}' flowId='$flowIdStr']")
+    println(
+        teamCityMessage(
+            "testSuiteStarted",
+            name = name,
+            flowId = "${prefix}${flowId}"
+        )
+    )
     return flowId
 }
 
 fun TestReport.addSuiteFinish(name: String, flowId: Int) {
-    val flowIdStr = "${prefix}${flowId}".tcEscape()
-    println("##teamcity[testSuiteFinished name='${name.tcEscape()}' flowId='$flowIdStr']")
+    println(
+        teamCityMessage(
+            "testSuiteFinished",
+            name = name,
+            flowId = "${prefix}${flowId}"
+        )
+    )
 }
 
 fun TestReport.addTestStart(name: String): Int {
     if (reportTestsAsSuites) return addSuiteStart(name)
 
     val flowId = nextFlowId++
-    val flowIdStr = "${prefix}${flowId}".tcEscape()
-    println("##teamcity[testStarted name='${name.tcEscape()}' captureStandardOutput='true' flowId='$flowIdStr']")
+    println(
+        teamCityMessage(
+            "testStarted",
+            name = name,
+            captureStandardOutput = true,
+            flowId = "${prefix}${flowId}"
+        )
+    )
     return flowId
 }
 
@@ -46,14 +62,24 @@ fun TestReport.addTestFailure(name: String, exception: Throwable, flowId: Int) {
 
     val details = "(details)" // exception.stackTraceToString().replace('\n', ' ')
     println(
-        "##teamcity[testFailed name='${name.tcEscape()}' message='${exception.tcEscape()}' details='${details.tcEscape()}' flowId='${"$prefix$flowId".tcEscape()}']"
+        teamCityMessage(
+            "testFailed",
+            name = name,
+            message = exception.message,
+            details = details,
+            flowId = "$prefix$flowId"
+        )
     )
 }
 
 fun TestReport.testIgnored(name: String, message: String, flowId: Int) {
-    val details = "(details)" // exception.stackTraceToString().replace('\n', ' ')
     println(
-        "##teamcity[testIgnored name='${name.tcEscape()}' message='${message.tcEscape()}' flowId='${flowId.tcEscape()}']"
+        teamCityMessage(
+            "testIgnored",
+            name = name,
+            message = message,
+            flowId = "$prefix$flowId"
+        )
     )
 }
 
@@ -66,6 +92,29 @@ fun TestReport.addTestFinish(name: String, flowId: Int) {
 fun TestReport.addTestFailureAndFinish(name: String, exception: Throwable, flowId: Int) {
     addTestFailure(name, exception, flowId)
     addTestFinish(name, flowId)
+}
+
+
+private fun teamCityMessage(
+    id: String,
+    name: String? = null,
+    message: String? = null,
+    duration: String? = null,
+    flowId: String? = null,
+    details: String? = null,
+    captureStandardOutput: Boolean? = null,
+): String {
+    return buildString {
+        append("##teamcity[")
+        append(id.tcEscape())
+        if (name != null) append("name='${name.tcEscape()}'")
+        if (message != null) append("message='${message.tcEscape()}'")
+//        if (flowId != null) append("flowId='${flowId.tcEscape()}'")
+        if (duration != null) append("duration='${duration.tcEscape()}'")
+        if (details != null) append("details='${details.tcEscape()}'")
+        if (captureStandardOutput != null) append("captureStandardOutput='${captureStandardOutput}'")
+        append("]")
+    }
 }
 
 private fun Any?.tcEscape(): String {
