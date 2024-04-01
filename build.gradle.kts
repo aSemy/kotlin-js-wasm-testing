@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.plugin.KotlinHierarchyTemplate
+import org.jetbrains.kotlin.gradle.targets.js.dsl.ExperimentalWasmDsl
 
 plugins {
     alias(libs.plugins.org.jetbrains.kotlin.multiplatform)
@@ -21,6 +22,7 @@ kotlin {
         binaries.executable()
     }
 
+    @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
         browser()
         nodejs()
@@ -37,12 +39,22 @@ kotlin {
     }
 
     sourceSets {
-        val commonMain by getting {
+        commonMain {
             dependencies {
                 implementation(libs.org.jetbrains.kotlinx.kotlinx.coroutines.core)
             }
         }
+
+        commonTest {
+            dependencies {
+//                implementation(kotlin("test"))
+            }
+        }
     }
+}
+
+tasks.withType<Test>().configureEach {
+    environment("MOCHA_TEAMCITY_FLOWID" to "kjs-wasm-testing")
 }
 
 // FIXME: WORKAROUND https://youtrack.jetbrains.com/issue/KT-65864
