@@ -79,7 +79,7 @@ fun runNestableTests() {
 
         test("should fail") {
             delay(2.seconds)
-            throw (AssertionError("this is a failure"))
+            throw AssertionError("this is a failure")
         }
     }
 }
