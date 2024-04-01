@@ -2,8 +2,9 @@ import kotlin.time.Duration
 
 class TestReporter(
     private val flowId: String,
-    private val parent: String? ,
+    private val parent: String?,
 ) {
+
 
     fun suiteStart(name: String) {
         teamCityMessage(
@@ -64,17 +65,19 @@ class TestReporter(
         captureStandardOutput: Boolean? = null,
         timestamp: String? = currentDateTime(),
     ) {
+          val dummyData = "." // tests must end in a . otherwise KotlinKarma fails
+
         val args = buildList {
             add(operation.tcEscape())
-            if (name != null) add("name='${name.tcEscape()}'")
-            if (parent != null) add("parent='${name.tcEscape()}'")
+            if (name != null) add("name='${name.tcEscape()}$dummyData'")
+            if (parent != null) add("parent='${name.tcEscape()}$dummyData'")
             if (message != null) add("message='${message.tcEscape()}'")
             if (timestamp != null) add("timestamp='${timestamp.removeSuffix("Z").tcEscape()}'")
 //        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
             add("flowId='${flowId.tcEscape()}'")
 //            add("flowId='kotest-flow'")
 
-        if (duration != null) add("duration='${duration.inWholeMilliseconds}'")
+            if (duration != null) add("duration='${duration.inWholeMilliseconds}'")
             if (details != null) add("details='${details.tcEscape()}'")
             if (captureStandardOutput != null) add("captureStandardOutput='${captureStandardOutput}'")
         }.joinToString(separator = " ")
@@ -122,7 +125,6 @@ class TestReporter(
 //        addTestFinish(name, flowId, timeMark.elapsedNow())
 //    }
 //}
-
 
 
 //fun TestReport.addTestFailureAndFinish(
