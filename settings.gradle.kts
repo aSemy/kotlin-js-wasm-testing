@@ -25,5 +25,7 @@ refreshVersions {
 rootProject.name = "kotlin-js-wasm-testing"
 
 include(
+    ":v1",
+    ":v2",
     ":with-kotlin-test",
 )
