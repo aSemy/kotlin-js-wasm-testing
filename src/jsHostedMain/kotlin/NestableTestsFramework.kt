@@ -70,16 +70,18 @@ private suspend fun test(name: String, testBlock: suspend () -> Unit) {
 }
 
 fun runNestableTests() {
-    suite("nestable async (via $flatTestFrameworkName)") {
-        container("container") {
-            test("should pass") {
-                delay(1.seconds)
+    suite("") {
+        suite("nestable async (via $flatTestFrameworkName)") {
+            container("container") {
+                test("should pass") {
+                    delay(1.seconds)
+                }
             }
-        }
 
-        test("should fail") {
-            delay(2.seconds)
-            throw AssertionError("this is a failure")
+            test("should fail") {
+                delay(2.seconds)
+                throw AssertionError("this is a failure")
+            }
         }
     }
 }
