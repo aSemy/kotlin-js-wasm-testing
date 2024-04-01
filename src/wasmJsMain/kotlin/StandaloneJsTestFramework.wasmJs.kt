@@ -1,4 +1,5 @@
 import kotlin.js.Promise
+import kotlin.time.TimeSource
 
 internal actual val standaloneJsFlatTestFramework: JsTestFramework = object : StandaloneJsFlatTestFramework() {
     override fun toString(): String = "standalone/Wasm/JS"
@@ -34,24 +35,26 @@ internal actual val standaloneJsFlatTestFramework: JsTestFramework = object : St
     private fun Test.startedPromise() = Promise { resolve, _ ->
         val flowId = report.addTestStart(name)
 
+        val markStart = TimeSource.Monotonic.markNow()
+
         try {
             val promise = testFn() as? Promise<*>
             if (promise != null) {
                 promise.then {
-                    report.addTestFinish(name, flowId)
+                    report.addTestFinish(name, flowId, markStart.elapsedNow())
                     resolve(null)
                     null
                 }.catch { exception ->
-                    report.addTestFailureAndFinish(name, Throwable("$exception"), flowId)
+                    report.addTestFailureAndFinish(name, Throwable("$exception"), flowId, markStart.elapsedNow())
                     resolve(null)
                     null
                 }
             } else {
-                report.addTestFinish(name, flowId)
+                report.addTestFinish(name, flowId, markStart.elapsedNow())
                 resolve(null)
             }
         } catch (exception: Throwable) {
-            report.addTestFailureAndFinish(name, exception, flowId)
+            report.addTestFailureAndFinish(name, exception, flowId, markStart.elapsedNow())
             resolve(null)
         }
     }

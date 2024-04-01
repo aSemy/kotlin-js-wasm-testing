@@ -1,4 +1,5 @@
 import kotlin.js.Promise
+import kotlin.time.TimeSource
 
 private val untransformedJsTestFramework = object : StandaloneJsFlatTestFramework() {
     override fun suite(name: String, ignored: Boolean, suiteFn: () -> Unit) {
@@ -31,22 +32,24 @@ private val untransformedJsTestFramework = object : StandaloneJsFlatTestFramewor
     private fun Test.startedPromise() = Promise { resolve, _ ->
         val flowId = report.addTestStart(name)
 
+        val timeMark = TimeSource.Monotonic.markNow()
+
         try {
             val promise = testFn() as? Promise<*>
             if (promise != null) {
                 promise.then {
-                    report.addTestFinish(name, flowId)
+                    report.addTestFinish(name, flowId, timeMark.elapsedNow())
                     resolve(Unit)
                 }.catch { exception ->
-                    report.addTestFailureAndFinish(name, exception, flowId)
+                    report.addTestFailureAndFinish(name, exception, flowId, timeMark.elapsedNow())
                     resolve(Unit)
                 }
             } else {
-                report.addTestFinish(name, flowId)
+                report.addTestFinish(name, flowId, timeMark.elapsedNow())
                 resolve(Unit)
             }
         } catch (exception: Throwable) {
-            report.addTestFailureAndFinish(name, exception, flowId)
+            report.addTestFailureAndFinish(name, exception, flowId, timeMark.elapsedNow())
             resolve(Unit)
         }
     }

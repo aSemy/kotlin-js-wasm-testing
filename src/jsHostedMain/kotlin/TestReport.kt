@@ -1,3 +1,6 @@
+import kotlin.time.Duration
+import kotlin.time.TimeSource
+
 class TestReport(val prefix: String) {
     var reportTestsAsSuites: Boolean = false
     internal var nextFlowId: Int = 1
@@ -10,35 +13,33 @@ inline fun TestReport.asSuite(name: String, suite: () -> Unit) {
 }
 
 inline fun TestReport.asTest(name: String, test: () -> Unit) {
+    println("launching as test")
     val flowId = addTestStart(name)
+    val timeMark = TimeSource.Monotonic.markNow()
     try {
         test()
     } catch (exception: Throwable) {
         addTestFailure(name, exception, flowId)
     } finally {
-        addTestFinish(name, flowId)
+        addTestFinish(name, flowId, timeMark.elapsedNow())
     }
 }
 
 fun TestReport.addSuiteStart(name: String): Int {
     val flowId = nextFlowId++
-    println(
-        teamCityMessage(
-            "testSuiteStarted",
-            name = name,
-            flowId = "${prefix}${flowId}"
-        )
+    teamCityMessage(
+        "testSuiteStarted",
+        name = name,
+        flowId = "${prefix}${flowId}"
     )
     return flowId
 }
 
 fun TestReport.addSuiteFinish(name: String, flowId: Int) {
-    println(
-        teamCityMessage(
-            "testSuiteFinished",
-            name = name,
-            flowId = "${prefix}${flowId}"
-        )
+    teamCityMessage(
+        "testSuiteFinished",
+        name = name,
+        flowId = "${prefix}${flowId}"
     )
 }
 
@@ -46,13 +47,11 @@ fun TestReport.addTestStart(name: String): Int {
     if (reportTestsAsSuites) return addSuiteStart(name)
 
     val flowId = nextFlowId++
-    println(
-        teamCityMessage(
-            "testStarted",
-            name = name,
-            captureStandardOutput = true,
-            flowId = "${prefix}${flowId}"
-        )
+    teamCityMessage(
+        "testStarted",
+        name = name,
+        captureStandardOutput = true,
+        flowId = "${prefix}${flowId}"
     )
     return flowId
 }
@@ -60,61 +59,69 @@ fun TestReport.addTestStart(name: String): Int {
 fun TestReport.addTestFailure(name: String, exception: Throwable, flowId: Int) {
     if (reportTestsAsSuites) return
 
-    val details = "(details)" // exception.stackTraceToString().replace('\n', ' ')
-    println(
-        teamCityMessage(
-            "testFailed",
-            name = name,
-            message = exception.message,
-            details = details,
-            flowId = "$prefix$flowId"
-        )
+    val details = exception.stackTraceToString()
+    teamCityMessage(
+        "testFailed",
+        name = name,
+        message = exception.message,
+        details = details,
+        flowId = "$prefix$flowId"
     )
 }
 
 fun TestReport.testIgnored(name: String, message: String, flowId: Int) {
-    println(
-        teamCityMessage(
-            "testIgnored",
-            name = name,
-            message = message,
-            flowId = "$prefix$flowId"
-        )
+    teamCityMessage(
+        "testIgnored",
+        name = name,
+        message = message,
+        flowId = "$prefix$flowId"
     )
 }
 
-fun TestReport.addTestFinish(name: String, flowId: Int) {
+fun TestReport.addTestFinish(name: String, flowId: Int, duration: Duration) {
     if (reportTestsAsSuites) return addSuiteFinish(name, flowId)
 
+    teamCityMessage(
+        "testFinished",
+        name = name,
+        duration = duration,
+        flowId = "$prefix$flowId"
+    )
     println("##teamcity[testFinished name='$name' duration='2' flowId='$prefix$flowId']")
 }
 
-fun TestReport.addTestFailureAndFinish(name: String, exception: Throwable, flowId: Int) {
+fun TestReport.addTestFailureAndFinish(
+    name: String,
+    exception: Throwable,
+    flowId: Int,
+    duration: Duration,
+) {
     addTestFailure(name, exception, flowId)
-    addTestFinish(name, flowId)
+    addTestFinish(name, flowId, duration)
 }
 
 
 private fun teamCityMessage(
-    id: String,
+    operation: String,
     name: String? = null,
     message: String? = null,
-    duration: String? = null,
+    duration: Duration? = null,
     flowId: String? = null,
     details: String? = null,
     captureStandardOutput: Boolean? = null,
-): String {
-    return buildString {
-        append("##teamcity[")
-        append(id.tcEscape())
-        if (name != null) append("name='${name.tcEscape()}'")
-        if (message != null) append("message='${message.tcEscape()}'")
-//        if (flowId != null) append("flowId='${flowId.tcEscape()}'")
-        if (duration != null) append("duration='${duration.tcEscape()}'")
-        if (details != null) append("details='${details.tcEscape()}'")
-        if (captureStandardOutput != null) append("captureStandardOutput='${captureStandardOutput}'")
-        append("]")
-    }
+) {
+    val args = buildList {
+        add(operation.tcEscape())
+        if (name != null) add("name='${name.tcEscape()}'")
+        if (message != null) add("message='${message.tcEscape()}'")
+//        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
+        if (duration != null) add("duration='${duration.inWholeMilliseconds}'")
+        if (details != null) add("details='${details.tcEscape()}'")
+        if (captureStandardOutput != null) add("captureStandardOutput='${captureStandardOutput}'")
+    }.joinToString(separator = " ")
+
+    println("\t TC ARGS ~ $args ~  \t\n")
+    println("\n##teamcity[${args}]\n")
 }
 
 private fun Any?.tcEscape(): String {
