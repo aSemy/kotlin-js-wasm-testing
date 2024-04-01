@@ -116,7 +116,7 @@ private fun teamCityMessage(
         if (name != null) add("name='${name.tcEscape()}'")
         if (message != null) add("message='${message.tcEscape()}'")
         if (timestamp != null) add("timestamp='${timestamp.removeSuffix("Z").tcEscape()}'")
-//        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
+        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
 //        if (duration != null) add("duration='${duration.inWholeMilliseconds}'")
         if (details != null) add("details='${details.tcEscape()}'")
         if (captureStandardOutput != null) add("captureStandardOutput='${captureStandardOutput}'")
