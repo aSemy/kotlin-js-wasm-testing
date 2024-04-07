@@ -14,7 +14,6 @@ import io.ktor.server.http.content.*
 import io.ktor.server.plugins.callloging.*
 import io.ktor.server.routing.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 import kotlinx.serialization.decodeFromString
@@ -23,10 +22,8 @@ import org.junit.platform.engine.support.descriptor.EngineDescriptor
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 import kotlin.io.path.Path
-import kotlin.time.Duration.Companion.seconds
 
 class KotestJSTestEngine : TestEngine {
-    //    private val id = this::class.qualifiedName!!
     private val id = "KotestJSTestEngine"
 
     private val ijLogger = IJTestEventLogger()
@@ -92,6 +89,9 @@ class KotestJSTestEngine : TestEngine {
                                         body {
                                             attributes["style"] = "background-color: #161616;"
 
+                                            // FIXME For main sources, KGP generates a combined .js file that contains all dependencies,
+                                            //       but for test sources, we have to define all files manually.
+                                            //       This is a hassle. Is there a better way?
                                             //@formatter:off
                                             script { src = "/src/kotlin-kotlin-stdlib.js" }
                                             script { src = "/src/kotlinx-atomicfu.js" }
@@ -113,16 +113,18 @@ class KotestJSTestEngine : TestEngine {
                         server.start(wait = false)
 
                         val serverPort = server.resolvedConnectors().first().port
-
+                        println("server started. port:$serverPort")
 
                         browser.newPage().use { page ->
+
+                            // suspend, until we receive the KOTEST-FINISHED marker
                             suspendCoroutine { continuation ->
 
                                 page.onConsoleMessage { msg ->
                                     val msgText = msg.text()
                                     println("[page ${page}] console message: $msgText")
 
-                                    val kotestMsg = Regex("kotest\\{([^\\}]+)\\}").find(msgText)
+                                    val kotestMsg = Regex("~~~KOTEST\\{([^\\}]+)\\}~~~").find(msgText)
 
                                     if (kotestMsg != null) {
                                         val message = kotestMsg.groupValues[1]
@@ -134,13 +136,12 @@ class KotestJSTestEngine : TestEngine {
                                             BeforeSuite -> ijLogger.beforeSuite(event.descriptor)
                                             BeforeTest -> ijLogger.beforeTest(event.descriptor)
                                             ConfigurationError -> TODO()
-                                            OnOutput -> TODO()
+                                            OnOutput -> ijLogger.onOutput(event.descriptor, event.output)
                                             ReportLocation -> TODO()
                                             Unknown -> TODO()
                                         }
                                     }
                                 }
-
 
                                 page.navigate("http://localhost:$serverPort/")
 

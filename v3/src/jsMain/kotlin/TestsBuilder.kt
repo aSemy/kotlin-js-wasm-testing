@@ -1,3 +1,4 @@
+import io.kotest.js_messages.TestDescriptor
 import kotlinx.coroutines.supervisorScope
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.TimeSource
@@ -9,19 +10,19 @@ annotation class TestsBuilderDsl
 @TestsBuilderDsl
 class TestsBuilder(
     private val scopeName: String,
-    private val parents: List<String>,
+    private val parent: TestDescriptor?,
 ) {
 //    private val parentsJoined = parents.joinToString(".")
 
-    private val reporter = TestReporter("tests-reporter", parents = parents)
+    private val reporter = TestReporter("tests-reporter", parent = parent)
 
     suspend fun context(
         name: String,
         block: suspend TestsBuilder.() -> Unit,
     ): Unit = supervisorScope {
-        reporter.suiteStart(name)
+        val desc = reporter.suiteStart(name)
         val duration = measureTime {
-            TestsBuilder(name, parents + scopeName).block()
+            TestsBuilder(name, desc).block()
         }
         reporter.suiteFinish(name, duration)
     }
@@ -48,8 +49,8 @@ class TestsBuilder(
             if (ex is CancellationException) throw ex
         } finally {
             reporter.testFinish(name, markStart.elapsedNow())
-            val parentsArr = parents.joinToString(",") { "\"${it.replace(" ", "-")}\"" }
-            println("""--END_KOTLIN_TEST-- {"suite": [$parentsArr], "description": "$name"} ${"\n\n"}""")
+//            val parentsArr = parents.joinToString(",") { "\"${it.replace(" ", "-")}\"" }
+//            println("""--END_KOTLIN_TEST-- {"suite": [$parentsArr], "description": "$name"} ${"\n\n"}""")
         }
     }
 
@@ -67,7 +68,11 @@ object TestScope
 
 
 suspend fun tests(block: suspend TestsBuilder.() -> Unit): Unit = supervisorScope {
-    TestsBuilder("tests-entry", emptyList()).block()
+    TestsBuilder("tests-entry", parent = null).apply {
+//        context("KotestJs") {
+            block()
+//        }
+    }
     println("~~~KOTEST-FINISHED~~~")
 }
 

@@ -1,9 +1,9 @@
-import kotlinx.coroutines.DelicateCoroutinesApi
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.promise
-import kotlin.js.Promise
 import kotlin.time.Duration.Companion.seconds
+//import kotlinx.coroutines.DelicateCoroutinesApi
+//import kotlinx.coroutines.GlobalScope
+//import kotlinx.coroutines.promise
+//import kotlin.js.Promise
 
 //@OptIn(ExperimentalJsExport::class)
 //@JsExport
@@ -34,9 +34,9 @@ suspend fun main(): Unit = tests {
         }
     }
 
-//    xcontext("ignored context") {
-//        test("active test, but should be ignored") {
-//            delay(3.seconds)
-//        }
-//    }
+    xcontext("ignored context") {
+        test("active test, but should be ignored") {
+            delay(3.seconds)
+        }
+    }
 }
