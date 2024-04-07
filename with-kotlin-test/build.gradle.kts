@@ -61,6 +61,10 @@ tasks.withType<Test>().configureEach {
     }
 }
 
+tasks.matching { it.name == "jsNodeProductionRun" }.configureEach {
+    mustRunAfter(tasks.matching { it.name == "jsDevelopmentExecutableCompileSync" })
+}
+
 
 /*
 [org.jetbrains.kotlin.gradle.tasks.testing] [KOTLIN] TCSM: ##teamcity[testSuiteStarted name=' TestJs.Chrome Headless 123.0.6312.87 (Mac OS 10.15.7)' flowId='karmaTC146421387594619892']

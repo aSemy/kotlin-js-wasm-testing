@@ -9,12 +9,12 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
     rootProject.extensions.configure<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJsRootExtension> {
         // Initialize once in a multi-project build.
         // Otherwise, Gradle would complain "Configuration already finalized for previous property values".
-        if (!System.getProperty("nodeJsCanaryConfigured").toBoolean()) {
+//        if (!System.getProperty("nodeJsCanaryConfigured").toBoolean()) {
             nodeVersion = "22.0.0-nightly2024010568c8472ed9"
-            println("Using Node.js $nodeVersion to support Kotlin/Wasm")
+            logger.info("Using Node.js $nodeVersion to support Kotlin/Wasm")
             nodeDownloadBaseUrl = "https://nodejs.org/download/nightly"
-            System.setProperty("nodeJsCanaryConfigured", "true")
-        }
+//            System.setProperty("nodeJsCanaryConfigured", "true")
+//        }
     }
 }
 

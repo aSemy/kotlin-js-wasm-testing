@@ -9,11 +9,11 @@ annotation class TestsBuilderDsl
 @TestsBuilderDsl
 class TestsBuilder(
     private val scopeName: String,
-    private val parents: List<String>
+    private val parents: List<String>,
 ) {
-    private val parentsJoined = parents.joinToString(".")
+//    private val parentsJoined = parents.joinToString(".")
 
-    private val reporter = TestReporter("tests-reporter", parent = parentsJoined)
+    private val reporter = TestReporter("tests-reporter", parents = parents)
 
     suspend fun context(
         name: String,
@@ -67,9 +67,8 @@ object TestScope
 
 
 suspend fun tests(block: suspend TestsBuilder.() -> Unit): Unit = supervisorScope {
-    testsLauncher {
-        TestsBuilder("tests-entry", emptyList()).block()
-    }
+    TestsBuilder("tests-entry", emptyList()).block()
+    println("~~~KOTEST-FINISHED~~~")
 }
 
 

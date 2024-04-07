@@ -5,7 +5,6 @@ class TestReporter(
     private val parent: String?,
 ) {
 
-
     fun suiteStart(name: String) {
         teamCityMessage(
             "testSuiteStarted",
@@ -65,25 +64,25 @@ class TestReporter(
         captureStandardOutput: Boolean? = null,
         timestamp: String? = currentDateTime(),
     ) {
-          val dummyData = "." // tests must end in a . otherwise KotlinKarma fails
+        val dummyData = "." // tests must end in a . otherwise KotlinKarma fails
 
-        val args = buildList {
-            add(operation.tcEscape())
-            if (name != null) add("name='${name.tcEscape()}$dummyData'")
-            if (parent != null) add("parent='${name.tcEscape()}$dummyData'")
-            if (message != null) add("message='${message.tcEscape()}'")
-            if (timestamp != null) add("timestamp='${timestamp.removeSuffix("Z").tcEscape()}'")
-//        if (flowId != null) add("flowId='${flowId.tcEscape()}'")
-            add("flowId='${flowId.tcEscape()}'")
-//            add("flowId='kotest-flow'")
-
-            if (duration != null) add("duration='${duration.inWholeMilliseconds}'")
-            if (details != null) add("details='${details.tcEscape()}'")
-            if (captureStandardOutput != null) add("captureStandardOutput='${captureStandardOutput}'")
-        }.joinToString(separator = " ")
-
-        println("\t TC ARGS ~ $args ~  \t\n")
-        println("\n##teamcity[${args}]\n")
+        val tcArgs = mapOf(
+            "name" to name?.plus(dummyData),
+            "parent" to parent?.plus(dummyData),
+            "message" to message,
+            "timestamp" to timestamp?.removeSuffix("Z"),
+            "flowId" to flowId,
+            "duration" to duration,
+            "details" to details,
+            "captureStandardOutput" to captureStandardOutput,
+        )
+            .filterValues { it != null }
+            .entries
+            .joinToString(separator = " ") { (k, v) ->
+                "$k='${v.tcEscape()}'"
+            }
+//        println("\t TC ARGS ~ tcArgs ~  \t\n")
+        println("##teamcity[$operation ${tcArgs}]\n")
     }
 
     private fun Any?.tcEscape(): String {
